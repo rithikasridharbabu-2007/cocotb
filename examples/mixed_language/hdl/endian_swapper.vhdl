@@ -56,15 +56,13 @@ end;
 architecture impl of endian_swapper_vhdl is
 
 
-function byteswap(data : in std_ulogic_vector(63 downto 0)) return std_ulogic_vector is begin
-    return  data(7  downto  0) &
-            data(15 downto  8) &
-            data(23 downto 16) &
-            data(31 downto 24) &
-            data(39 downto 32) &
-            data(47 downto 40) &
-            data(55 downto 48) &
-            data(63 downto 56);
+function byteswap(data : in std_ulogic_vector(DATA_BYTES*8-1 downto 0)) return std_ulogic_vector is
+    variable result : std_ulogic_vector(DATA_BYTES*8-1 downto 0);
+begin
+    for i in 0 to DATA_BYTES-1 loop
+        result(i*8+7 downto i*8) := data((DATA_BYTES-i)*8-1 downto (DATA_BYTES-1-i)*8);
+    end loop;
+    return result;
 end;
 
 signal csr_waitrequest_int      : std_ulogic;

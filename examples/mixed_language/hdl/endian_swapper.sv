@@ -55,23 +55,9 @@ module endian_swapper_sv #(
 
 
 function [DATA_BYTES*8-1:0] byteswap(input [DATA_BYTES*8-1:0] data);
-/*
-    // FIXME Icarus doesn't seem to like this....
-    reg [$clog2(DATA_BYTES)-1:0] i;
-
-    for (i=0; i<DATA_BYTES; i=i+1)
-        byteswap[i*8+7 -:8] = data[(DATA_BYTES-i)*8-1 -:8];
-*/
-
-    // Hardwire for now
-    byteswap = { data[7:0],
-                 data[15:8],
-                 data[23:16],
-                 data[31:24],
-                 data[39:32],
-                 data[47:40],
-                 data[55:48],
-                 data[63:56]};
+    integer i;
+    for (i = 0; i < DATA_BYTES; i = i + 1)
+        byteswap[i*8 +: 8] = data[(DATA_BYTES-1-i)*8 +: 8];
 endfunction
 
 

@@ -1,0 +1,1 @@
+The ``mixed_language`` example now enables byte swapping and checks that the data is swapped by each instance. Previously, byte swapping was never enabled, and the SystemVerilog top-level file inverted the CSR write data of its second instance, so the two top-level files behaved differently.

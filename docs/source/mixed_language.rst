@@ -9,6 +9,9 @@ Thus, we end up with SystemVerilog+VHDL instantiated in VHDL and
 SystemVerilog+VHDL instantiated in SystemVerilog.
 
 The cocotb testbench pulls the reset on both instances and checks that they behave the same.
+It then enables byte swapping in both instances through their shared CSR bus,
+sends data through the chain, and checks that the data between the two instances is byte-swapped
+and that the data at the output matches the input again.
 
 .. todo::
 

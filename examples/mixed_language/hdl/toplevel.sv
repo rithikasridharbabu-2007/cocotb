@@ -98,7 +98,7 @@ endian_swapper_vhdl #(
     .csr_read                               (csr_read),
     .csr_write                              (csr_write),
     .csr_waitrequest                        (csr_waitrequest_vhdl),
-    .csr_writedata                          (~csr_writedata)
+    .csr_writedata                          (csr_writedata)
 
 );
 

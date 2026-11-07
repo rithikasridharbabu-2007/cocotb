@@ -75,7 +75,7 @@ async def mixed_language_accessing_test(dut):
     raises=AttributeError,
 )
 async def mixed_language_functional_test(dut):
-    """Try concurrent simulation of VHDL and Verilog and check the output."""
+    """Enable byte swapping in both instances and check that the data is swapped twice."""
     await Timer(100, unit="ns")
 
     verilog = dut.i_swapper_sv
@@ -105,30 +105,51 @@ async def mixed_language_functional_test(dut):
     await Timer(100, unit="ns")
 
     # start clock
-    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
+    Clock(dut.clk, 10, unit="ns").start()
     await Timer(500, unit="ns")
 
-    previous_indata = 0
-    # transmit some packets
-    for _ in range(1, 5):
-        for i in range(1, 11):
-            await RisingEdge(dut.clk)
-            previous_indata = dut.stream_in_data.value.to_unsigned()
+    # Enable byte swapping by writing 1 to CSR address 0.
+    # The CSR bus is shared, so this configures both instances at once.
+    await RisingEdge(dut.clk)
+    assert dut.csr_waitrequest.value == 0, "CSR bus unexpectedly busy"
+    dut.csr_address.value = 0
+    dut.csr_writedata.value = 1
+    dut.csr_write.value = 1
+    await RisingEdge(dut.clk)
+    dut.csr_write.value = 0
 
-            # write stream in data
-            dut.stream_in_data.value = i + 0x81FFFFFF2B00  # generate a magic number
-            dut.stream_in_valid.value = 1
-            await RisingEdge(dut.clk)
-            dut.stream_in_valid.value = 0
+    data_bytes = len(dut.stream_in_data) // 8
 
-            # await stream out data
-            await RisingEdge(dut.clk)
-            await RisingEdge(dut.clk)
+    def byteswap(value: int) -> int:
+        return int.from_bytes(value.to_bytes(data_bytes, "big"), "little")
 
-            # compare in and out data
-            assert previous_indata == dut.stream_out_data.value.to_unsigned(), (
-                f"stream in data and stream out data were different in round {i}"
+    # Each instance only updates its output when its input is valid,
+    # so the output of the second instance lags one transfer behind.
+    previous_indata = None
+    for i in range(1, 11):
+        indata = i + 0x81FFFFFF2B00  # generate a magic number
+
+        await RisingEdge(dut.clk)
+        dut.stream_in_data.value = indata
+        dut.stream_in_valid.value = 1
+        await RisingEdge(dut.clk)
+        dut.stream_in_valid.value = 0
+
+        # await stream out data
+        await RisingEdge(dut.clk)
+        await RisingEdge(dut.clk)
+
+        # The first (SystemVerilog) instance swapped the bytes ...
+        assert dut.sv_to_vhdl_data.value.to_unsigned() == byteswap(indata), (
+            f"SystemVerilog instance did not swap the bytes in transfer {i}"
+        )
+
+        # ... and the second (VHDL) instance swapped them back.
+        if previous_indata is not None:
+            assert dut.stream_out_data.value.to_unsigned() == previous_indata, (
+                f"stream in data and stream out data were different in transfer {i}"
             )
+        previous_indata = indata
 
 
 sim = os.getenv("SIM", "icarus")
