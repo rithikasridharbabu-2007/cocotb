@@ -98,8 +98,61 @@ The Python type of a value depends on the handle's HDL type:
 * Boolean nets and constants (``boolean``) return :class:`bool`.
 * String nets and constants (``string``) return :class:`bytes`.
 
-.. todo::
-    Add simple example of how to use LogicArray
+.. _writing_tbs_logicarray:
+
+Working with ``LogicArray`` values
+----------------------------------
+
+A :class:`~cocotb.types.LogicArray` holds one :class:`~cocotb.types.Logic` value per bit,
+so unlike a Python :class:`int` it can represent ``X``, ``Z``, and the other non-``0``/``1`` values
+a simulator may report.
+It also remembers the index range of the HDL signal it was read from.
+
+.. code-block:: verilog
+
+    module my_module (
+        input   logic [7:0] data_in,
+        output  logic [7:0] data_out
+        );
+
+.. code-block:: python
+
+    from cocotb.types import LogicArray
+
+    val = dut.data_out.value  # LogicArray('0000XXXX', Range(7, 'downto', 0))
+
+    # Check whether all bits are 0 or 1 before treating the value as a number
+    if val.is_resolvable:
+        ...
+
+    # Convert to an integer. Raises ValueError if any bit is not 0 or 1.
+    n = val.to_unsigned()  # interpret as unsigned
+    n = val.to_signed()    # interpret as two's complement
+
+    # Index and slice using the HDL's indices, not Python's 0-based ones.
+    # Slices are inclusive on both ends, like in HDL.
+    msb = val[7]       # Logic('0')
+    low = val[3:0]     # LogicArray('XXXX', Range(3, 'downto', 0))
+
+    # Compare against integers or strings
+    assert dut.data_out.value == 0xA5
+    assert dut.data_out.value == "10100101"
+
+    # Build values to assign
+    dut.data_in.value = LogicArray("1010XXXX")            # drive some bits to X
+    dut.data_in.value = LogicArray.from_unsigned(200, 8)  # same as assigning 200
+    dut.data_in.value = LogicArray.from_signed(-56, 8)    # same as assigning -56
+
+    # Modify part of a value, then write it back
+    val = LogicArray.from_unsigned(0, 8)
+    val[7] = 1
+    val[3:0] = "1111"
+    dut.data_in.value = val  # 10001111
+
+:class:`~cocotb.types.LogicArray` also supports the bitwise operators ``&``, ``|``, ``^``, and ``~``.
+Both operands of a binary operator must be :class:`~cocotb.types.LogicArray`\ s of the same length,
+e.g. ``val & LogicArray("00001111")``.
+See :class:`~cocotb.types.LogicArray` for the complete interface.
 
 
 .. _writing_tbs_identifying_tests:

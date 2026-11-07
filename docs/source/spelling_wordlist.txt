@@ -42,6 +42,7 @@ Wiki
 XML
 Xcelium
 backpressure
+bitwise
 bugfixes
 builtin
 callgraph
