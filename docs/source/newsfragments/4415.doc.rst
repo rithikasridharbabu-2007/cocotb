@@ -1,0 +1,1 @@
+Links to example and source files in the documentation now point to the commit the documentation was built from, instead of falling back to the ``master`` branch on Read the Docs.

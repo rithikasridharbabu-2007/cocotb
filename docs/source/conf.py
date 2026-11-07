@@ -102,13 +102,21 @@ release = cocotb.__version__
 # The short X.Y version.
 v_major, v_minor = LooseVersion(release).version[:2]
 version = "{}.{}".format(v_major, v_minor)
-# cocotb commit ID
-try:
-    commit_id = (
-        subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("ascii")
-    )
-except subprocess.CalledProcessError:
-    commit_id = "master"
+# cocotb commit ID, used to link to source files of the documented version.
+# Read the Docs provides the commit hash of the build directly, which avoids
+# depending on the state of the git checkout in its build environment.
+# https://docs.readthedocs.io/en/stable/reference/environment-variables.html
+commit_id = os.environ.get("READTHEDOCS_GIT_COMMIT_HASH", "").strip()
+if not commit_id:
+    try:
+        commit_id = (
+            subprocess.check_output(["git", "rev-parse", "HEAD"])
+            .strip()
+            .decode("ascii")
+        )
+    except (OSError, subprocess.CalledProcessError):
+        # git is not installed or this is not a git checkout
+        commit_id = "master"
 
 # Is this documentation build a ReadTheDocs build for a git tag, i.e., a
 # release? Set the 'is_release_build' tag then, which can be used by the
