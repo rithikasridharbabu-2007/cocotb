@@ -1,0 +1,1 @@
+Added the :file:`examples/model_stub/` example, which shows how to use a Python model in place of a submodule whose :term:`HDL` has not been implemented yet.
